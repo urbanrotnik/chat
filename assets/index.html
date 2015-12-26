@@ -1,16 +1,138 @@
 <!DOCTYPE html>
 <html >
 <head>
-  <title>Sails Socket Demo - Maangalabs</title>
-  <!-- BootSwatch Paper Theme for Bootstrap -->
+  <title>Varen čet</title>
   <link rel="stylesheet" type="text/css" href="/styles/bootstrap.min.css">
-  <!-- Open Sans Font -->
+  <style type="text/css">
+  body{
+    background: #ededed;
+    font-family: 'Open Sans', sans-serif;
+  }
+  .navbar{
+    border-radius: 0px;
+  }
+  .form_chat{
+    padding:10px;
+  }
+  .form-control{
+    width: inherit;
+  }
+  .chat_message{
+    padding: 10px;
+    color: #000;
+    font-size: 15px;
+  background: #fff;
+    font-family: 'Open Sans', sans-serif;
+  }
+  .td_class{
+    word-break:break-all;
+    padding: 34px;
+    padding-bottom: 0px;
+    padding-top: 20px;
+    border:0;
+  }
+  .navbar-brand{
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .user_name{
+    padding-bottom: 0;
+    color: #fff;
+    font-size: 15px;
+  }
+  .col-lg-4,.col-lg-6{
+    padding-right: 3px;
+    padding-left: 3px;
+  }
+  </style>
   <link href='https://fonts.googleapis.com/css?family=Open+Sans:300,600' rel='stylesheet' type='text/css'>
 </head>
 <body ng-app="socketApp" ng-controller="ChatController">
-  <!-- Sails Socket Dependancy -->
+
+  <div class="navbar navbar-default navbar-fixed-top">
+
+  </div>
+  <div class="col-md-12" style="padding:100px">
+    <table  class="table">
+      <tr class="chat_message" ng-repeat="chat in chatList | orderBy:predicate:reverse | limitTo: 15">
+        <td class="col-md-12 td_class"><strong>{{ chat.user }} : </strong> {{ chat.message }}</td>
+      </tr>
+    </table>
+
+  </div>
+
+  <div class="navbar navbar-inverse navbar-fixed-bottom" >
+    <div class="col-lg-12">
+
+      <form class="form_chat">
+        <div class="col-lg-3 col-md-3">
+          <input type="text" ng-model = "chatUser" class="form-control" placeholder="Vaš vzdevek">
+        </div>
+
+        <div class="col-lg-4 col-md-4">
+          <input type="text" ng-model = "chatMessage" class="form-control" placeholder="Vaše sporočilo">
+        </div>
+
+        <div class="col-lg-3 col-md-3">
+          <input type="text" ng-model = "chatKey" class="form-control" placeholder="Šif. ključ">
+        </div>
+
+        <button class="btn btn-default col-lg-2 col-md-2" ng-click="sendMsg()">Send</button>
+      </form>
+
+    </div>
+  </div>
+  <script type="text/javascript" src="/js/crypt.js"></script>
   <script type="text/javascript" src="/js/dependencies/sails.io.js"></script>
-  <!-- Angular Js  -->
   <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.27/angular.min.js"></script>
+  <script src="http://crypto-js.googlecode.com/svn/tags/3.1.2/build/rollups/aes.js"></script>
+
+  <script type="text/javascript">
+    var socketApp = angular.module('socketApp',[]);
+    socketApp.controller('ChatController',['$http','$log','$scope',function($http,$log,$scope){
+      $scope.predicate = '-id';
+      $scope.reverse = false;
+      $scope.baseUrl = 'http://localhost:1337';
+      $scope.chatList =[];
+
+      //Kak bi to funkcijo prožu sam? Da lahko refrešam vse, ko tipčki ključ spremeni?
+      $scope.getAllchat = function(){
+        io.socket.get('/chat/addconv');
+        $http.get($scope.baseUrl+'/chat')
+        .success(function(success_data){
+          angular.forEach(success_data, function(data) {
+            for(var key in data) {
+              if(key === "message"){
+                data[key]=decryptAES(data[key], $scope.chatKey);
+              }
+            }
+          })
+          $scope.chatList = success_data;
+        $log.info(success_data);
+        });
+      };
+      $scope.getAllchat();
+      $scope.chatUser = "UnknownUser"
+      $scope.chatKey = "kljuc"
+      $scope.chatMessage="";
+      io.socket.on('chat',function(obj){
+        if(obj.verb === 'created'){
+          $log.info(obj)
+          obj.data.message = decryptAES(obj.data.message, $scope.chatKey);
+          $scope.chatList.push(obj.data);
+          $scope.$digest();
+        }
+      });
+      $scope.sendMsg = function(){
+        $log.info($scope.chatMessage);
+        //Kriptiraj sporočilo
+        var encMsg = encryptAES($scope.chatMessage, $scope.chatKey)
+
+        io.socket.post('/chat/addconv/',{user:$scope.chatUser,message: encMsg});
+        $scope.chatMessage = "";
+      };
+    }]);
+  </script>
 </body>
 </html>
