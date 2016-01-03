@@ -5,7 +5,7 @@
   <link rel="stylesheet" type="text/css" href="/styles/bootstrap.min.css">
   <style type="text/css">
   body{
-    background: #ededed;
+    background: #fff;
     font-family: 'Open Sans', sans-serif;
   }
   .navbar{
@@ -13,9 +13,6 @@
   }
   .form_chat{
     padding:10px;
-  }
-  .form-control{
-    width: inherit;
   }
   .chat_message{
     padding: 10px;
@@ -50,9 +47,7 @@
 </head>
 <body ng-app="socketApp" ng-controller="ChatController">
 
-  <div class="navbar navbar-default navbar-fixed-top">
 
-  </div>
   <div class="col-md-12" style="padding:100px">
     <table  class="table">
       <tr class="chat_message" ng-repeat="chat in chatList | orderBy:predicate:reverse | limitTo: 15">
@@ -78,7 +73,7 @@
           <input type="text" ng-model = "chatKey" class="form-control" placeholder="Šif. ključ">
         </div>
 
-        <button class="btn btn-default col-lg-2 col-md-2" ng-click="sendMsg()">Send</button>
+        <button class="btn btn-default col-lg-2 col-md-2" ng-click="sendMsg()">Pošlji</button>
       </form>
 
     </div>
@@ -113,7 +108,7 @@
         });
       };
       $scope.getAllchat();
-      $scope.chatUser = "UnknownUser"
+      $scope.chatUser = "Uporabnik" + Math.round(Math.random()*1000000)
       $scope.chatKey = "kljuc"
       $scope.chatMessage="";
       io.socket.on('chat',function(obj){
